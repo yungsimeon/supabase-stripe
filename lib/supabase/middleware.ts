@@ -37,6 +37,16 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Log session information for debugging
+  console.log(`🔐 Middleware - Path: ${request.nextUrl.pathname}`);
+  console.log(
+    `👤 User: ${user ? `${user.email} (${user.id})` : "Not authenticated"}`
+  );
+
+  if (user) {
+    console.log(`📊 User metadata:`, user.user_metadata);
+  }
+
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
@@ -44,6 +54,9 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/api") &&
     request.nextUrl.pathname !== "/"
   ) {
+    console.log(
+      `🚫 Redirecting to login - no user on protected route: ${request.nextUrl.pathname}`
+    );
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
     url.pathname = "/login";

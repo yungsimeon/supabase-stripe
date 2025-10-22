@@ -101,7 +101,7 @@ export async function getOrganization(
 }
 
 export async function requireOrganizationAccess(
-  organizationId: string,
+  organizationIdOrSlug: string,
   userRole?: OrganizationMember["role"]
 ): Promise<{
   user: User;
@@ -111,12 +111,19 @@ export async function requireOrganizationAccess(
   const user = await requireUser();
   const supabase = await createClient();
 
+  // Determine if we're looking up by ID (UUID format) or slug
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      organizationIdOrSlug
+    );
+
   // Get organization and membership in one query to avoid RLS issues
-  const { data, error } = await supabase
+  const query = supabase
     .from("organization_members")
     .select(
       `
       role,
+      organization_id,
       organizations!inner (
         id,
         name,
@@ -131,9 +138,16 @@ export async function requireOrganizationAccess(
       )
     `
     )
-    .eq("organization_id", organizationId)
-    .eq("user_id", user.id)
-    .single();
+    .eq("user_id", user.id);
+
+  // Filter by either organization_id or slug
+  if (isUuid) {
+    query.eq("organization_id", organizationIdOrSlug);
+  } else {
+    query.eq("organizations.slug", organizationIdOrSlug);
+  }
+
+  const { data, error } = await query.single();
 
   if (error || !data) {
     redirect("/dashboard");

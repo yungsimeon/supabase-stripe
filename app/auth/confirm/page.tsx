@@ -14,10 +14,46 @@ export default function AuthConfirmPage() {
   useEffect(() => {
     const handleAuthConfirmation = async () => {
       try {
+        const code = searchParams.get("code");
         const tokenHash = searchParams.get("token_hash");
         const type = searchParams.get("type");
 
-        if (tokenHash && type) {
+        console.log("🔗 Auth confirm params:", {
+          code,
+          tokenHash,
+          type,
+          errorParam: searchParams.get("error"),
+          errorDescription: searchParams.get("error_description"),
+        });
+
+        if (code) {
+          console.log("🔐 Magic link detected, setting up auth listener...");
+
+          // Listen for auth state changes
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("🔐 Auth state change:", event, session?.user?.email);
+
+            if (event === "SIGNED_IN" && session?.user) {
+              console.log("✅ User signed in:", session.user.email);
+              router.push("/dashboard");
+              subscription.unsubscribe();
+            }
+          });
+
+          // Also check for existing session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session && sessionData.session.user) {
+            console.log(
+              "✅ Session already exists:",
+              sessionData.session.user.email
+            );
+            router.push("/dashboard");
+            subscription.unsubscribe();
+          }
+        } else if (tokenHash && type) {
+          // Handle OTP verification for other auth types
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: type as any,
@@ -33,6 +69,7 @@ export default function AuthConfirmPage() {
           setError("Invalid confirmation link");
         }
       } catch (err) {
+        console.error("Auth confirmation error:", err);
         setError("An error occurred during confirmation");
       } finally {
         setLoading(false);

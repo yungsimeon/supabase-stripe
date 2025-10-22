@@ -30,6 +30,7 @@ export default function DashboardSidebar({
     { name: "Billing", href: `/dashboard/${currentSlug}/billing`, icon: "💳" },
     { name: "Members", href: `/dashboard/${currentSlug}/members`, icon: "👥" },
     { name: "Usage", href: `/dashboard/${currentSlug}/usage`, icon: "📈" },
+    { name: "Analytics", href: `/dashboard/analytics`, icon: "🔬" },
     {
       name: "Settings",
       href: `/dashboard/${currentSlug}/settings`,

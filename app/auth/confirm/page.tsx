@@ -32,11 +32,44 @@ export default function AuthConfirmPage() {
           // Listen for auth state changes
           const {
             data: { subscription },
-          } = supabase.auth.onAuthStateChange((event, session) => {
+          } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log("🔐 Auth state change:", event, session?.user?.email);
 
             if (event === "SIGNED_IN" && session?.user) {
               console.log("✅ User signed in:", session.user.email);
+
+              // Send welcome email
+              try {
+                const response = await fetch(
+                  "https://objzvzcsjbwzlzpyrhhw.supabase.co/functions/v1/send-welcome-email",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${session.access_token}`,
+                    },
+                    body: JSON.stringify({
+                      user_id: session.user.id,
+                      email: session.user.email,
+                      full_name:
+                        session.user.user_metadata?.full_name ||
+                        session.user.user_metadata?.name,
+                    }),
+                  }
+                );
+
+                if (response.ok) {
+                  console.log("✅ Welcome email sent successfully");
+                } else {
+                  console.log(
+                    "⚠️ Welcome email failed:",
+                    await response.text()
+                  );
+                }
+              } catch (error) {
+                console.log("⚠️ Welcome email error:", error);
+              }
+
               router.push("/dashboard");
               subscription.unsubscribe();
             }
@@ -49,6 +82,36 @@ export default function AuthConfirmPage() {
               "✅ Session already exists:",
               sessionData.session.user.email
             );
+
+            // Send welcome email for existing session
+            try {
+              const response = await fetch(
+                "https://objzvzcsjbwzlzpyrhhw.supabase.co/functions/v1/send-welcome-email",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionData.session.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    user_id: sessionData.session.user.id,
+                    email: sessionData.session.user.email,
+                    full_name:
+                      sessionData.session.user.user_metadata?.full_name ||
+                      sessionData.session.user.user_metadata?.name,
+                  }),
+                }
+              );
+
+              if (response.ok) {
+                console.log("✅ Welcome email sent successfully");
+              } else {
+                console.log("⚠️ Welcome email failed:", await response.text());
+              }
+            } catch (error) {
+              console.log("⚠️ Welcome email error:", error);
+            }
+
             router.push("/dashboard");
             subscription.unsubscribe();
           }
@@ -62,7 +125,37 @@ export default function AuthConfirmPage() {
           if (error) {
             setError(error.message);
           } else if (data.user) {
-            // Successfully confirmed, redirect to dashboard
+            // Successfully confirmed, send welcome email and redirect to dashboard
+            try {
+              // Get the session to get the access token
+              const { data: sessionData } = await supabase.auth.getSession();
+              const response = await fetch(
+                "https://objzvzcsjbwzlzpyrhhw.supabase.co/functions/v1/send-welcome-email",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${sessionData.session?.access_token}`,
+                  },
+                  body: JSON.stringify({
+                    user_id: data.user.id,
+                    email: data.user.email,
+                    full_name:
+                      data.user.user_metadata?.full_name ||
+                      data.user.user_metadata?.name,
+                  }),
+                }
+              );
+
+              if (response.ok) {
+                console.log("✅ Welcome email sent successfully");
+              } else {
+                console.log("⚠️ Welcome email failed:", await response.text());
+              }
+            } catch (error) {
+              console.log("⚠️ Welcome email error:", error);
+            }
+
             router.push("/dashboard");
           }
         } else {

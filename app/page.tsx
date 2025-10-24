@@ -23,6 +23,12 @@ export default function Home() {
               >
                 Get Started
               </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+              >
+                Contact Us
+              </Link>
               <a
                 href="https://github.com/your-repo"
                 target="_blank"
